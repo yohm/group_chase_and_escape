@@ -179,7 +179,7 @@ class Stage
       next if direction == [0,0] or find_player_at(new_pos)
       c.move_to(new_pos)
       handle_catch(c)
-      return if @escapees.empty?
+      break if @escapees.empty?
     end
   end
 
@@ -191,7 +191,6 @@ class Stage
       next if direction == [0,0] or find_player_at(new_pos)
       e.move_to(new_pos)
       collect_neighboring_players_around(e.position).find {|player| player.is_a?(Chaser) }
-      return if @escapees.empty?
     end
   end
 
