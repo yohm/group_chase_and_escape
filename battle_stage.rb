@@ -216,10 +216,17 @@ class BattleStage
 end
 
 if __FILE__ == $0
+  require 'optparse'
   SYSTEM_SIZE = 50
   num_chasers = 5
   num_escapees = 10
-  max_timestep = 1000
+  max_timestep = 3000
+
+  opts = OptionParser.new
+  opts.on("-c CHASER_SCRIPT") {|script| load script }
+  opts.on("-e ESCAPEE_SCRIPT") {|script| load script }
+  opts.on("-r RAND_SEED") {|seed| srand(seed.to_i) }
+  opts.parse!(ARGV)
   stage = BattleStage.new(SYSTEM_SIZE, SYSTEM_SIZE, num_chasers, num_escapees)
 
   until stage.finished? or stage.timestep >= max_timestep

@@ -1,8 +1,14 @@
 require File.join(File.dirname(__FILE__), 'battle_stage')
 
 def setup
+  require 'optparse'
+  opts = OptionParser.new
+  opts.on("-c CHASER_SCRIPT") {|script| load script }
+  opts.on("-e ESCAPEE_SCRIPT") {|script| load script }
+  opts.on("-r RAND_SEED") {|seed| srand(seed.to_i) }
+  opts.parse!(ARGV)
+
   size(700,500)
-  srand(ARGV[0].to_i) if ARGV[0]
   @system_size = 50
   @total_num_escapees = 10
   @stage = BattleStage.new(@system_size,@system_size,5,@total_num_escapees)
