@@ -70,7 +70,7 @@ group chase and escape (鬼ごっこ)
 ## 鬼・逃亡者のロジックの実装
 
 - 鬼は ChaserStrategy クラスを実装します。
-  - 以下の様に `#next_direction` メソッドを実装します。
+  - 以下のサンプルの様に `#next_direction` メソッドを実装します。
 
 ```rb:sample_chaser.rb
 class ChaserStrategy
