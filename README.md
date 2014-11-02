@@ -38,6 +38,7 @@ group chase and escape (鬼ごっこ)
   rp5 run battle_stage_gui.rb -c chaser_strategy.rb -e escapee_strategy.rb -r 1234
   ```
   - -c オプションに ChaesrStrategy, -e オプションに EscapeeStrategy を実装したスクリプトへのパスを与えてください。
+    - 指定がない場合はデフォルトのロジックを使います。
   - -r オプションに乱数の種を指定してください。指定がない場合はランダムな値を使います。
 
 ### CUIでの実行
@@ -49,6 +50,7 @@ group chase and escape (鬼ごっこ)
   ruby battle_stage.rb -c chaser_strategy.rb -e escapee_strategy.rb -r 1234
   ```
   - -c オプションに ChaesrStrategy, -e オプションに EscapeeStrategy を実装したスクリプトへのパスを与えてください。
+    - 指定がない場合はデフォルトのロジックを使います。
   - -r オプションに乱数の種を指定してください。指定がない場合はランダムな値を使います。
 
 ### 総当たり戦の実行
