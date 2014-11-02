@@ -2,6 +2,9 @@ require 'stringio'
 require 'pp'
 require 'pry'
 
+require File.join(File.dirname(__FILE__), "chaser_strategy")
+require File.join(File.dirname(__FILE__), "escapee_strategy")
+
 class Player
 
   attr_reader :position
@@ -17,9 +20,9 @@ class Player
   def display(rx,ry)
     x = @position[0] * rx + rx/2
     y = @position[1] * ry + ry/2
-    stroke(0)
-    fill(*self.class::COLOR)
-    ellipse(x,y,rx,ry)
+    $app.stroke(0)
+    $app.fill(*self.class::COLOR)
+    $app.ellipse(x,y,rx,ry)
   end
 end
 
@@ -27,41 +30,13 @@ class Chaser < Player
 
   COLOR = [255,0,0]
 
-  def next_direction(close_chasers, close_escapees)
-    dx, dy = close_escapees.first
-    candidate = []
-    if dx > 0
-      candidate.push [1,0]
-    elsif dx < 0
-      candidate.push [-1,0]
-    end
-    if dy > 0
-      candidate.push [0,1]
-    elsif dy < 0
-      candidate.push [0,-1]
-    end
-    candidate.sample
+  def initialize(pos)
+    super
+    @strategy = ChaserStrategy.new
   end
 
-  def next_direction(close_chasers, close_escapees)
-    candidate = []
-    dx, dy = close_escapees.first
-    r = 5.0 / (dx.abs + dy.abs)
-    if rand < r
-      if dx > 0
-        candidate.push [1,0]
-      elsif dx < 0
-        candidate.push [-1,0]
-      end
-      if dy > 0
-        candidate.push [0,1]
-      elsif dy < 0
-        candidate.push [0,-1]
-      end
-    else
-      candidate = [[1,0],[-1,0],[0,1],[0,-1]]
-    end
-    candidate.sample
+  def next_direction(chaser_positions, escapee_positions)
+    @strategy.next_direction(chaser_positions, escapee_positions)
   end
 end
 
@@ -69,43 +44,17 @@ class Escapee < Player
 
   COLOR = [0,255,0]
 
-  def next_direction(close_chasers, close_escapees)
-    dx, dy = close_chasers.first
-    candidate = [[1,0],[-1,0],[0,1],[0,-1]]
-    if dx > 0
-      candidate.delete([1,0])
-    elsif dx < 0
-      candidate.delete([-1,0])
-    end
-    if dy > 0
-      candidate.delete([0,1])
-    elsif dy < 0
-      candidate.delete([0,-1])
-    end
-    candidate.sample
+  def initialize(pos)
+    super
+    @strategy = EscapeeStrategy.new
   end
 
-  def next_direction(close_chasers, close_escapees)
-    points = { [1,0] => 0.0, [-1,0] => 0.0, [0,1] => 0.0, [0,-1] => 0.0 }
-    close_chasers[0..3].each do |dx,dy|
-      r = (dx.abs + dy.abs).to_f
-      if dx > 0
-        points[ [-1,0] ] += dx.abs/(r*r)
-      elsif dx < 0
-        points[ [1,0] ] += dx.abs/(r*r)
-      end
-      if dy > 0
-        points[ [0,-1] ] += dy.abs/(r*r)
-      elsif dy < 0
-        points[ [0,1] ] += dy.abs/(r*r)
-      end
-    end
-    direction = points.max {|a,b| a[1] <=> b[1] }[0]
-    direction
+  def next_direction(chaser_positions, escapee_positions)
+    @strategy.next_direction(chaser_positions, escapee_positions)
   end
 end
 
-class Stage
+class BattleStage
 
   attr_reader :timestep
 
@@ -175,6 +124,7 @@ class Stage
     @chasers.each do |c|
       chaser_positions, escapee_positions = relative_player_positions_from(c)
       direction = c.next_direction(chaser_positions, escapee_positions)
+      validate_direction(direction)
       new_pos = new_position(c.position, direction)
       next if direction == [0,0] or find_player_at(new_pos)
       c.move_to(new_pos)
@@ -187,11 +137,16 @@ class Stage
     @escapees.delete_if do |e|
       chaser_positions, escapee_positions = relative_player_positions_from(e)
       direction = e.next_direction(chaser_positions, escapee_positions)
+      validate_direction(direction)
       new_pos = new_position(e.position, direction)
       next if direction == [0,0] or find_player_at(new_pos)
       e.move_to(new_pos)
       collect_neighboring_players_around(e.position).find {|player| player.is_a?(Chaser) }
     end
+  end
+
+  def validate_direction(direction)
+    raise "#{direction} is not valid" unless direction[0].abs + direction[1].abs <= 1
   end
 
   def handle_catch(player)
@@ -260,34 +215,16 @@ class Stage
   end
 end
 
-def setup
-  size(700,500)
-  srand(ARGV[0].to_i) if ARGV[0]
-  @system_size = 50
-  @total_num_escapees = 10
-  @stage = Stage.new(@system_size,@system_size,5,@total_num_escapees)
-  frame_rate(20)
-  text_size(32)
-  text_align(RIGHT)
-end
+if __FILE__ == $0
+  SYSTEM_SIZE = 50
+  num_chasers = 5
+  num_escapees = 10
+  max_timestep = 1000
+  stage = BattleStage.new(SYSTEM_SIZE, SYSTEM_SIZE, num_chasers, num_escapees)
 
-def draw
-  background(0)
-  @stage.update unless @stage.finished?
-  @stage.display(500,500)
-  draw_sidebar
-end
-
-def draw_sidebar
-  fill(255)
-  rect(500,0,200,500)
-  fill(192,64,64)
-  text("Prize:\n #{@stage.timestep}00 Yen", 680, 40)
-  fill(0,128,64)
-  text_align(RIGHT)
-  text("#{@stage.num_escapees} / #{@total_num_escapees}", 680, 480)
-  @total_num_escapees.times do |i|
-    fill(128) if @stage.num_escapees == i
-    rect(640,400-30*i,30,30,2)
+  until stage.finished? or stage.timestep >= max_timestep
+    stage.update
+    $stdout.puts "#{stage.timestep} #{stage.num_escapees}"
   end
 end
+
