@@ -231,7 +231,8 @@ if __FILE__ == $0
 
   until stage.finished? or stage.timestep >= max_timestep
     stage.update
-    $stdout.puts "#{stage.timestep} #{stage.num_escapees}"
+    $stderr.puts "#{stage.timestep} #{stage.num_escapees}" if stage.timestep % 10 == 0
   end
+  $stdout.puts "Time for total-catch : #{stage.timestep}"
 end
 
